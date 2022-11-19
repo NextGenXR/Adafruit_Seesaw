@@ -26,10 +26,37 @@
  *
  */
 
+#if __has_include(<main.h>)
+#include <main.h>
+#endif
+
 #include "Adafruit_seesaw.h"
+#include <Adafruit_I2CDevice.h>
 #include <Arduino.h>
+#include <Print.h>
+
+#include <cstdint>
+#include <cstdbool>
+
+#ifdef USE_HAL_DRIVER
+#include <stm32yyxx_hal_conf.h>
+#include <stm32yyxx_hal_def.h>
+#include <stm32yyxx_hal_i2c.h>
+#include <cmsis_os.h>
+
+#include <stm32duino.h>
+#define DELAY HAL_Delay
+
+#else
+#define DELAY delay
+#endif
+
 
 //#define SEESAW_I2C_DEBUG
+//#define USE_FLOW
+
+
+
 
 /*!
  *****************************************************************************************
@@ -37,6 +64,7 @@
  *
  *  @param      i2c_bus the I2C bus connected to the seesaw, defaults to "Wire"
  ****************************************************************************************/
+#ifndef USE_HAL_DRIVER
 Adafruit_seesaw::Adafruit_seesaw(TwoWire *i2c_bus) {
   if (i2c_bus == NULL) {
     _i2cbus = &Wire;
@@ -44,6 +72,14 @@ Adafruit_seesaw::Adafruit_seesaw(TwoWire *i2c_bus) {
     _i2cbus = i2c_bus;
   }
 }
+#else
+Adafruit_seesaw::Adafruit_seesaw(I2C_HandleTypeDef * Handle) {
+
+	_hi2c = Handle;
+
+}
+#endif
+
 
 /*!
  *****************************************************************************************
@@ -59,17 +95,24 @@ Adafruit_seesaw::Adafruit_seesaw(TwoWire *i2c_bus) {
  *
  *  @return     true if we could connect to the seesaw, false otherwise
  ****************************************************************************************/
-bool Adafruit_seesaw::begin(uint8_t addr, int8_t flow, bool reset) {
+bool Adafruit_seesaw::begin(uint8_t addr, int8_t flow, bool reset)
+{
+#ifdef USE_FLOW
   _flow = flow;
 
   if (_flow != -1)
     ::pinMode(_flow, INPUT);
+#endif
 
   if (_i2c_dev) {
     delete _i2c_dev;
   }
 
+#ifndef USE_HAL_DRIVER
   _i2c_dev = new Adafruit_I2CDevice(addr, _i2cbus);
+#else
+  _i2c_dev = new Adafruit_I2CDevice(addr, _hi2c);
+#endif
 
   bool found = false;
   for (int retries = 0; retries < 10; retries++) {
@@ -77,11 +120,12 @@ bool Adafruit_seesaw::begin(uint8_t addr, int8_t flow, bool reset) {
       found = true;
       break;
     }
-    delay(10);
+
+    DELAY(10);
   }
 
   if (!found) {
-    return false;
+    return (false);
   }
 
 #ifdef SEESAW_I2C_DEBUG
@@ -96,12 +140,12 @@ bool Adafruit_seesaw::begin(uint8_t addr, int8_t flow, bool reset) {
         found = true;
         break;
       }
-      delay(10);
+      DELAY(10);
     }
   }
 
   if (!found) {
-    return false;
+    return (false);
   }
 
 #ifdef SEESAW_I2C_DEBUG
@@ -118,7 +162,7 @@ bool Adafruit_seesaw::begin(uint8_t addr, int8_t flow, bool reset) {
       _hardwaretype = c;
     }
 
-    delay(10);
+    DELAY(10);
   }
 
 #ifdef SEESAW_I2C_DEBUG
@@ -187,7 +231,7 @@ bool Adafruit_seesaw::getProdDatecode(uint16_t *pid, uint8_t *year,
   *year = vers & 0x3F;
   *mon = (vers >> 7) & 0xF;
   *day = (vers >> 11) & 0x1F;
-  return true;
+  return (true);
 }
 
 /*!
@@ -333,7 +377,7 @@ uint16_t Adafruit_seesaw::analogRead(uint8_t pin) {
 
   this->read(SEESAW_ADC_BASE, SEESAW_ADC_CHANNEL_OFFSET + p, buf, 2, 500);
   uint16_t ret = ((uint16_t)buf[0] << 8) | buf[1];
-  delay(1);
+  DELAY(1);
   return ret;
 }
 
@@ -370,7 +414,9 @@ uint16_t Adafruit_seesaw::touchRead(uint8_t pin) {
  *	@param		mode the mode to set the pins to. One of INPUT, OUTPUT,
  *or INPUT_PULLUP.
  ************************************************************************/
-void Adafruit_seesaw::pinModeBulk(uint32_t pins, uint8_t mode) {
+void Adafruit_seesaw::pinModeBulk(uint32_t pins, uint8_t mode)
+{
+#ifndef USE_HAL_DRIVER
   uint8_t cmd[] = {(uint8_t)(pins >> 24), (uint8_t)(pins >> 16),
                    (uint8_t)(pins >> 8), (uint8_t)pins};
   switch (mode) {
@@ -391,6 +437,9 @@ void Adafruit_seesaw::pinModeBulk(uint32_t pins, uint8_t mode) {
     this->write(SEESAW_GPIO_BASE, SEESAW_GPIO_BULK_CLR, cmd, 4);
     break;
   }
+#else
+
+#endif
 }
 
 /*!
@@ -406,7 +455,9 @@ void Adafruit_seesaw::pinModeBulk(uint32_t pins, uint8_t mode) {
  *or INPUT_PULLUP.
  ****************************************************************************************/
 void Adafruit_seesaw::pinModeBulk(uint32_t pinsa, uint32_t pinsb,
-                                  uint8_t mode) {
+                                  uint8_t mode)
+{
+#ifndef USE_HAL_DRIVER
   uint8_t cmd[] = {(uint8_t)(pinsa >> 24), (uint8_t)(pinsa >> 16),
                    (uint8_t)(pinsa >> 8),  (uint8_t)pinsa,
                    (uint8_t)(pinsb >> 24), (uint8_t)(pinsb >> 16),
@@ -429,6 +480,9 @@ void Adafruit_seesaw::pinModeBulk(uint32_t pinsa, uint32_t pinsb,
     this->write(SEESAW_GPIO_BASE, SEESAW_GPIO_BULK_CLR, cmd, 8);
     break;
   }
+#else
+
+#endif
 }
 
 /*!
@@ -441,13 +495,16 @@ void Adafruit_seesaw::pinModeBulk(uint32_t pinsa, uint32_t pinsb,
  *	@param		value pass HIGH to set the output on the passed pins to
  *HIGH, low to set the output on the passed pins to LOW.
  ****************************************************************************************/
-void Adafruit_seesaw::digitalWriteBulk(uint32_t pins, uint8_t value) {
+void Adafruit_seesaw::digitalWriteBulk(uint32_t pins, uint8_t value)
+{
+
   uint8_t cmd[] = {(uint8_t)(pins >> 24), (uint8_t)(pins >> 16),
                    (uint8_t)(pins >> 8), (uint8_t)pins};
   if (value)
     this->write(SEESAW_GPIO_BASE, SEESAW_GPIO_BULK_SET, cmd, 4);
   else
     this->write(SEESAW_GPIO_BASE, SEESAW_GPIO_BULK_CLR, cmd, 4);
+
 }
 
 /*!
@@ -463,7 +520,9 @@ void Adafruit_seesaw::digitalWriteBulk(uint32_t pins, uint8_t value) {
  *HIGH, low to set the output on the passed pins to LOW.
  ****************************************************************************************/
 void Adafruit_seesaw::digitalWriteBulk(uint32_t pinsa, uint32_t pinsb,
-                                       uint8_t value) {
+                                       uint8_t value)
+{
+
   uint8_t cmd[] = {(uint8_t)(pinsa >> 24), (uint8_t)(pinsa >> 16),
                    (uint8_t)(pinsa >> 8),  (uint8_t)pinsa,
                    (uint8_t)(pinsb >> 24), (uint8_t)(pinsb >> 16),
@@ -472,6 +531,7 @@ void Adafruit_seesaw::digitalWriteBulk(uint32_t pinsa, uint32_t pinsb,
     this->write(SEESAW_GPIO_BASE, SEESAW_GPIO_BULK_SET, cmd, 8);
   else
     this->write(SEESAW_GPIO_BASE, SEESAW_GPIO_BULK_CLR, cmd, 8);
+
 }
 
 /*!
@@ -485,7 +545,8 @@ void Adafruit_seesaw::digitalWriteBulk(uint32_t pinsa, uint32_t pinsb,
  *	@param		width the width of the value to write. Defaults to 8. If
  *16 is passed a 16 bit value will be written.
  ****************************************************************************************/
-void Adafruit_seesaw::analogWrite(uint8_t pin, uint16_t value, uint8_t width) {
+void Adafruit_seesaw::analogWrite(uint8_t pin, uint16_t value, uint8_t width)
+{
   int8_t p = -1;
 
   if (_hardwaretype == SEESAW_HW_ID_CODE_SAMD09) {
@@ -609,7 +670,7 @@ char Adafruit_seesaw::readSercomData(uint8_t sercom) {
  ****************************************************************************************/
 void Adafruit_seesaw::setI2CAddr(uint8_t addr) {
   this->EEPROMWrite8(SEESAW_EEPROM_I2C_ADDR, addr);
-  delay(250);
+  DELAY(250);
   this->begin(addr); // restart w/ the new addr
 }
 
@@ -871,23 +932,25 @@ bool Adafruit_seesaw::read(uint8_t regHigh, uint8_t regLow, uint8_t *buf,
   // on arduino we need to read in 32 byte chunks
   while (pos < num) {
     uint8_t read_now = min(32, num - pos);
-
+#ifdef USE_FLOW
     if (_flow != -1) {
       while (!::digitalRead(_flow))
         yield();
     }
+#endif
 
     if (!_i2c_dev->write(prefix, 2)) {
-      return false;
+      return (false);
     }
 
     // TODO: tune this
     delayMicroseconds(delay);
-
+#ifdef USE_FLLOW
     if (_flow != -1) {
       while (!::digitalRead(_flow))
         yield();
     }
+#endif
 
 #ifdef SEESAW_I2C_DEBUG
     Serial.print("Reading ");
@@ -896,7 +959,7 @@ bool Adafruit_seesaw::read(uint8_t regHigh, uint8_t regLow, uint8_t *buf,
 #endif
 
     if (!_i2c_dev->read(buf + pos, read_now)) {
-      return false;
+      return (false);
     }
     pos += read_now;
 #ifdef SEESAW_I2C_DEBUG
@@ -906,7 +969,7 @@ bool Adafruit_seesaw::read(uint8_t regHigh, uint8_t regLow, uint8_t *buf,
     Serial.println(num);
 #endif
   }
-  return true;
+  return (true);
 }
 
 /*!
@@ -926,15 +989,16 @@ bool Adafruit_seesaw::write(uint8_t regHigh, uint8_t regLow,
   prefix[0] = (uint8_t)regHigh;
   prefix[1] = (uint8_t)regLow;
 
+#ifdef USE_FLOW
   if (_flow != -1)
     while (!::digitalRead(_flow))
       yield();
-
+#endif
   if (!_i2c_dev->write(buf, num, true, prefix, 2)) {
-    return false;
+    return (false);
   }
 
-  return true;
+  return (true);
 }
 
 /*!
@@ -951,8 +1015,10 @@ bool Adafruit_seesaw::write(uint8_t regHigh, uint8_t regLow,
 size_t Adafruit_seesaw::write(uint8_t character) {
   // TODO: add support for multiple sercoms
   this->write8(SEESAW_SERCOM0_BASE, SEESAW_SERCOM_DATA, character);
-  delay(1); // TODO: this can be optimized... it's only needed for longer writes
-  return 1;
+
+  // TODO: this can be optimized... it's only needed for longer writes
+  DELAY(1);
+  return (1);
 }
 
 /*!

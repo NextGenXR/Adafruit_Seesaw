@@ -21,9 +21,31 @@
 #ifndef LIB_SEESAW_H
 #define LIB_SEESAW_H
 
+#if __has_include(<main.h>)
+#include <main.h>
+#endif
+
 #include "Adafruit_I2CDevice.h"
 #include <Arduino.h>
+
+#ifndef USE_HAL_DRIVER
 #include <Wire.h>
+#else
+
+#include <Print.h>
+
+#include <cstdint>
+#include <cstdbool>
+#include <stm32yyxx_hal_conf.h>
+#include <stm32yyxx_hal_def.h>
+#include <stm32yyxx_hal_i2c.h>
+
+#include <Print.h>
+#include <cmsis_os.h>
+
+typedef uint8_t byte;
+
+#endif
 
 /*=========================================================================
     I2C ADDRESS/BITS
@@ -231,14 +253,19 @@ union keyState {
    helper IC
 */
 /**************************************************************************/
-class Adafruit_seesaw : public Print {
+class Adafruit_seesaw : public Print
+{
 public:
   // constructors
+#ifndef USE_HAL_DRIVER
   Adafruit_seesaw(TwoWire *Wi = NULL);
+#else
+  Adafruit_seesaw(I2C_HandleTypeDef * Handle = NULL);
+
+#endif
   ~Adafruit_seesaw(void){};
 
-  bool begin(uint8_t addr = SEESAW_ADDRESS, int8_t flow = -1,
-             bool reset = true);
+  bool begin(uint8_t addr = SEESAW_ADDRESS, int8_t flow = -1, bool reset = true);
   uint32_t getOptions();
   uint32_t getVersion();
   bool getProdDatecode(uint16_t *pid, uint8_t *year, uint8_t *mon,
@@ -298,7 +325,12 @@ public:
   virtual size_t write(const char *str);
 
 protected:
+#ifndef USE_HAL_DRIVER
   TwoWire *_i2cbus; /*!< The I2C Bus used to communicate with the seesaw */
+#else
+  I2C_HandleTypeDef * _hi2c;
+#endif
+
   Adafruit_I2CDevice *_i2c_dev = NULL; ///< The BusIO device for I2C control
 
   int8_t _flow; /*!< The flow control pin to use */
