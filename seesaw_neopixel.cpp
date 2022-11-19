@@ -29,24 +29,44 @@
 #include "Adafruit_seesaw.h"
 
 // Constructor when length, pin and type are known at compile-time:
+#ifndef USE_HAL_DRIVER
 seesaw_NeoPixel::seesaw_NeoPixel(uint16_t n, uint8_t p, neoPixelType t,
                                  TwoWire *Wi)
     : Adafruit_seesaw(Wi), begun(false), numLEDs(n), pin(p), brightness(0),
       pixels(NULL), endTime(0), type(t) {}
+#else
+seesaw_NeoPixel::seesaw_NeoPixel(uint16_t n, uint8_t p, neoPixelType t,
+		I2C_HandleTypeDef * Handle)
+    : Adafruit_seesaw(Handle), begun(false), numLEDs(n), pin(p), brightness(0),
+      pixels(NULL), endTime(0), type(t)
+{}
+
+#endif
 
 // via Michael Vogt/neophob: empty constructor is used when strand length
 // isn't known at compile-time; situations where program config might be
 // read from internal flash memory or an SD card, or arrive via serial
 // command.  If using this constructor, MUST follow up with updateType(),
 // updateLength(), etc. to establish the strand type, length and pin number!
+#ifndef USE_HAL_DRIVER
 seesaw_NeoPixel::seesaw_NeoPixel(TwoWire *Wi)
     : Adafruit_seesaw(Wi),
 #ifdef NEO_KHZ400
       is800KHz(true),
 #endif
       begun(false), numLEDs(0), numBytes(0), pin(-1), brightness(0),
-      pixels(NULL), rOffset(1), gOffset(0), bOffset(2), wOffset(1), endTime(0) {
-}
+      pixels(NULL), rOffset(1), gOffset(0), bOffset(2), wOffset(1), endTime(0)
+{}
+#else
+seesaw_NeoPixel::seesaw_NeoPixel(I2C_HandleTypeDef * Handle)
+    : Adafruit_seesaw(Handle),
+#ifdef NEO_KHZ400
+      is800KHz(true),
+#endif
+      begun(false), numLEDs(0), numBytes(0), pin(-1), brightness(0),
+      pixels(NULL), rOffset(1), gOffset(0), bOffset(2), wOffset(1), endTime(0)
+{}
+#endif
 
 seesaw_NeoPixel::~seesaw_NeoPixel() {
   if (pixels)
@@ -82,7 +102,7 @@ void seesaw_NeoPixel::updateLength(uint16_t n) {
 }
 
 void seesaw_NeoPixel::updateType(neoPixelType t) {
-  boolean oldThreeBytesPerPixel = (wOffset == rOffset); // false if RGBW
+  bool oldThreeBytesPerPixel = (wOffset == rOffset); // false if RGBW
 
   wOffset = (t >> 6) & 0b11; // See notes in header file
   rOffset = (t >> 4) & 0b11; // regarding R/G/B/W offsets
@@ -95,7 +115,7 @@ void seesaw_NeoPixel::updateType(neoPixelType t) {
   // If bytes-per-pixel has changed (and pixel data was previously
   // allocated), re-allocate to new size.  Will clear any data.
   if (pixels) {
-    boolean newThreeBytesPerPixel = (wOffset == rOffset);
+    bool newThreeBytesPerPixel = (wOffset == rOffset);
     if (newThreeBytesPerPixel != oldThreeBytesPerPixel)
       updateLength(numLEDs);
   }

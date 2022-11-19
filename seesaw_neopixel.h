@@ -18,6 +18,33 @@
 
 #include "Adafruit_seesaw.h"
 #include <Arduino.h>
+#include <wiring_time.h>
+
+#include <cstdint>
+#include <cstdbool>
+
+#ifdef USE_HAL_DRIVER
+
+#include <stm32yyxx_hal_conf.h>
+#include <stm32yyxx_hal_def.h>
+#include <stm32yyxx_hal_i2c.h>
+#include <stm32duino.h>
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+	extern I2C_HandleTypeDef hi2c1;
+	extern I2C_HandleTypeDef hi2c2;
+	extern I2C_HandleTypeDef hi2c4;
+
+	constexpr I2C_HandleTypeDef* default_i2c = &hi2c2;
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+
 
 // The order of primary colors in the NeoPixel data stream can vary
 // among device types, manufacturers and even different revisions of
@@ -96,37 +123,43 @@ typedef uint16_t neoPixelType;
 class seesaw_NeoPixel : public Adafruit_seesaw {
 
 public:
-  seesaw_NeoPixel(uint16_t n, uint8_t p = 6,
-                  neoPixelType t = NEO_GRB + NEO_KHZ800, TwoWire *Wi = NULL);
+#ifndef USE_HAL_DRIVER
+  seesaw_NeoPixel(uint16_t n, uint8_t p = 6, neoPixelType t = NEO_GRB + NEO_KHZ800, TwoWire *Wi = NULL);
   seesaw_NeoPixel(TwoWire *Wi = NULL);
+#else
+  seesaw_NeoPixel(uint16_t n, uint8_t p = 6, neoPixelType t = NEO_GRB + NEO_KHZ800, I2C_HandleTypeDef* Handle = NULL);
+  seesaw_NeoPixel(I2C_HandleTypeDef * Handle = NULL);
+#endif
   ~seesaw_NeoPixel();
 
   bool begin(uint8_t addr = SEESAW_ADDRESS, int8_t flow = -1);
-  void show(void), setPin(uint8_t p),
-      setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b),
-      setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w),
-      setPixelColor(uint16_t n, uint32_t c), setBrightness(uint8_t), clear(),
-      updateLength(uint16_t n), updateType(neoPixelType t);
-  uint8_t *getPixels(void) const, getBrightness(void) const;
-  int8_t getPin(void) { return pin; };
+  void show(void), setPin(uint8_t p);
+  void setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b);
+  void setPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t b, uint8_t w);
+  void setPixelColor(uint16_t n, uint32_t c), setBrightness(uint8_t), clear();
+  void updateLength(uint16_t n);
+  void updateType(neoPixelType t);
+  uint8_t *getPixels(void) const;
+  uint8_t getBrightness(void) const;
+  int8_t getPin(void) { return (pin); };
   uint16_t numPixels(void) const;
-  static uint32_t Color(uint8_t r, uint8_t g, uint8_t b),
-      Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w);
+  static uint32_t Color(uint8_t r, uint8_t g, uint8_t b);
+  static uint32_t Color(uint8_t r, uint8_t g, uint8_t b, uint8_t w);
   uint32_t getPixelColor(uint16_t n) const;
-  inline bool canShow(void) { return (micros() - endTime) >= 300L; }
+  inline bool canShow(void) { return ((micros() - endTime) >= 300L); }
 
 protected:
-  boolean is800KHz, // ...true if 800 KHz pixels
-      begun;        // true if begin() previously called
-  uint16_t numLEDs, // Number of RGB LEDs in strip
-      numBytes;     // Size of 'pixels' buffer below (3 or 4 bytes/pixel)
+  bool is800KHz; // ...true if 800 KHz pixels
+  bool begun;        // true if begin() previously called
+  uint16_t numLEDs; // Number of RGB LEDs in strip
+  uint16_t numBytes;     // Size of 'pixels' buffer below (3 or 4 bytes/pixel)
   int8_t pin;
-  uint8_t brightness,
-      *pixels,      // Holds LED color values (3 or 4 bytes each)
-      rOffset,      // Index of red byte within each 3- or 4-byte pixel
-      gOffset,      // Index of green byte
-      bOffset,      // Index of blue byte
-      wOffset;      // Index of white byte (same as rOffset if no white)
+  uint8_t brightness;
+  uint8_t *pixels;      // Holds LED color values (3 or 4 bytes each)
+  uint8_t rOffset;      // Index of red byte within each 3- or 4-byte pixel
+  uint8_t gOffset;      // Index of green byte
+  uint8_t bOffset;      // Index of blue byte
+  uint8_t wOffset;      // Index of white byte (same as rOffset if no white)
   uint32_t endTime; // Latch timing reference
 
   uint16_t type;
