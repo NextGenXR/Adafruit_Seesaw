@@ -1,6 +1,8 @@
 #ifndef _SEESAW_SERVO_H
 #define _SEESAW_SERVO_H
 
+#ifdef ARDUINO
+
 #include "Adafruit_seesaw.h"
 
 /**************************************************************************/
@@ -62,5 +64,7 @@ private:
   uint16_t min;
   uint16_t max;
 };
+
+#endif /* ARDUINO */
 
 #endif

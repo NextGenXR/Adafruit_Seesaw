@@ -1,6 +1,8 @@
 #ifndef _NEO_TRELLIS_H
 #define _NEO_TRELLIS_H
 
+#ifdef ARDUINO
+
 #include "Adafruit_seesaw.h"
 #include "seesaw_neopixel.h"
 #include <Arduino.h>
@@ -91,5 +93,7 @@ protected:
   Adafruit_NeoTrellis
       *_trelli; ///< a multidimensional array of neotrellis objects
 };
+
+#endif /* ARDUINO */
 
 #endif

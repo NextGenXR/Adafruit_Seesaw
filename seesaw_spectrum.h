@@ -1,6 +1,8 @@
 #ifndef _SEESAW_SPECTRUM_H
 #define _SEESAW_SPECTRUM_H
 
+#ifdef ARDUINO
+
 #include "Adafruit_seesaw.h"
 #include <Arduino.h>
 
@@ -66,5 +68,7 @@ public:
 private:
   uint8_t bins[64]; // Audio spectrum "bins"
 };
+
+#endif /* ARDUINO */
 
 #endif // end _SEESAW_SPECTRUM_H

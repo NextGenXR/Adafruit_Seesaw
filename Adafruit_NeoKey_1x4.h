@@ -1,6 +1,8 @@
 #ifndef _NEOKEY_1X4_H
 #define _NEOKEY_1X4_H
 
+#ifdef ARDUINO
+
 #include "Adafruit_seesaw.h"
 #include "seesaw_neopixel.h"
 #include <Arduino.h>
@@ -92,5 +94,7 @@ protected:
   uint8_t _cols; ///< the number of trellis boards in the X direction
   Adafruit_NeoKey_1x4 *_neokeys; ///< a multidimensional array of neokey objects
 };
+
+#endif /* ARDUINO */
 
 #endif

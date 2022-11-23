@@ -1,6 +1,8 @@
 #ifndef _SEESAW_MOTOR_H
 #define _SEESAW_MOTOR_H
 
+#ifdef ARDUINO
+
 #include "Adafruit_seesaw.h"
 
 /**************************************************************************/
@@ -78,5 +80,7 @@ private:
   int8_t _pina, _pinb;
   float _throttle;
 };
+
+#endif /* ARDUINO */
 
 #endif

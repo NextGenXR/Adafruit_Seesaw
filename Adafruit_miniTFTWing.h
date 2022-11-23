@@ -1,6 +1,8 @@
 #ifndef _MINI_TFT_WING_H
 #define _MINI_TFT_WING_H
 
+#ifdef ARDUINO
+
 #include "Adafruit_seesaw.h"
 
 #define TFTWING_ADDR 0x5E
@@ -53,5 +55,7 @@ public:
   void tftReset(bool rst = true);
   uint32_t readButtons();
 };
+
+#endif /* ARDUINO */
 
 #endif

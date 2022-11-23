@@ -1,6 +1,8 @@
 #ifndef _CRICKIT_TERSTER_H
 #define _CRICKIT_TERSTER_H
 
+#ifdef ARDUINO
+
 #include "Adafruit_seesaw.h"
 
 #define CRICKIT_SIGNAL1 2
@@ -49,5 +51,7 @@ public:
   uint16_t analogRead(uint8_t pin);
   void setPWMFreq(uint8_t pin, uint16_t freq);
 };
+
+#endif /* ARDUINO */
 
 #endif

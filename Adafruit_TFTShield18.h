@@ -1,6 +1,8 @@
 #ifndef _TFT_SHIELD_18_H
 #define _TFT_SHIELD_18_H
 
+#ifdef ARDUINO
+
 #include "Adafruit_seesaw.h"
 
 #define TFTSHIELD_ADDR 0x2E
@@ -56,5 +58,7 @@ public:
   void tftReset(bool rst = true);
   uint32_t readButtons();
 };
+
+#endif /* ARDUINO */
 
 #endif
