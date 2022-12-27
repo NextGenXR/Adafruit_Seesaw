@@ -28,7 +28,7 @@
 #include <stm32yyxx_hal_conf.h>
 #include <stm32yyxx_hal_def.h>
 #include <stm32yyxx_hal_i2c.h>
-#include <stm32duino.h>
+#include "../STM32F7xx_Nucleo_144/Utility/stm32duino.h"
 
 
 #ifdef __cplusplus

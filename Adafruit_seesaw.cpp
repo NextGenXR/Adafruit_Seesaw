@@ -44,7 +44,7 @@
 #include <stm32yyxx_hal_i2c.h>
 #include <cmsis_os.h>
 
-#include <stm32duino.h>
+#include "../STM32F7xx_Nucleo_144/Utility/stm32duino.h"
 #define DELAY HAL_Delay
 
 #else
